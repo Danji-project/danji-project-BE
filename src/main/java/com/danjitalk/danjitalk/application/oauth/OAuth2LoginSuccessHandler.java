@@ -3,10 +3,14 @@ package com.danjitalk.danjitalk.application.oauth;
 import com.danjitalk.danjitalk.common.security.CustomMemberDetails;
 import com.danjitalk.danjitalk.domain.user.member.entity.SystemUser;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -29,11 +33,20 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
         Authentication authentication) throws IOException, ServletException {
 
-        String redirectUri = request.getParameter("redirect_uri");
-        if (redirectUri == null || redirectUri.isEmpty()) {
-            redirectUri = "https://danji-talk-frontend.vercel.app";  // 기본값
-        }
+        String redirectUri = Arrays.stream(Optional.ofNullable(request.getCookies()).orElse(new Cookie[0]))
+                .filter(cookie -> "origin".equals(cookie.getName()))
+                .map(Cookie::getValue)
+                .findFirst()
+                .orElse("https://danji-talk-frontend.vercel.app"); // 기본값
 
+        // 프론트에서 설정한 쿠키 삭제
+        Cookie cookie = new Cookie("origin", null);
+        cookie.setMaxAge(0);
+        cookie.setPath("/");
+        response.addCookie(cookie);
+
+        log.info("redirectUri: {}", redirectUri);
+        redirectUri = URLDecoder.decode(redirectUri, StandardCharsets.UTF_8);
         log.info("redirect uri: {}", redirectUri);
 
         // OAuth2 로그인이 성공했을 때의 추가 작업을 수행
