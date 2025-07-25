@@ -29,18 +29,12 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
         Authentication authentication) throws IOException, ServletException {
 
-        String origin = Optional.ofNullable(request.getHeader("Origin"))
-                .orElse(request.getHeader("Referer"));
-
-        String frontendRedirectUrl;
-        if (origin != null && origin.contains("localhost")) {
-            frontendRedirectUrl = "http://localhost:5173";
-        } else {
-            frontendRedirectUrl = "https://danji-talk-frontend.vercel.app";
+        String redirectUri = request.getParameter("redirect_uri");
+        if (redirectUri == null || redirectUri.isEmpty()) {
+            redirectUri = "https://danji-talk-frontend.vercel.app";  // 기본값
         }
 
-        log.info("origin header: {}", origin);
-        log.info("frontendRedirectUrl: {}", frontendRedirectUrl);
+        log.info("redirect uri: {}", redirectUri);
 
         // OAuth2 로그인이 성공했을 때의 추가 작업을 수행
         // 여기에서는 JWT 토큰을 발급하고 형식에 맞게 return
@@ -58,6 +52,6 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
         redisTemplate.opsForValue().set(key, map, Duration.ofMinutes(3));
 
         // 성공 후 리다이렉트 SecurityConfig에 .defaultSuccessUrl("/api/success/oauth")는 쿠키설정이 안됨
-        getRedirectStrategy().sendRedirect(request, response, frontendRedirectUrl + "/oauth/redirect?status=success&social-code=" + uuid); // 리다이렉트 주소
+        getRedirectStrategy().sendRedirect(request, response, redirectUri + "/oauth/redirect?status=success&social-code=" + uuid); // 리다이렉트 주소
     }
 }
