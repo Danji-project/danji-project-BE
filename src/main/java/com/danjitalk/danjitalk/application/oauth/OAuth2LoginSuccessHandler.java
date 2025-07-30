@@ -3,17 +3,12 @@ package com.danjitalk.danjitalk.application.oauth;
 import com.danjitalk.danjitalk.common.security.CustomMemberDetails;
 import com.danjitalk.danjitalk.domain.user.member.entity.SystemUser;
 import jakarta.servlet.ServletException;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,21 +28,20 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
         Authentication authentication) throws IOException, ServletException {
 
-        String redirectUri = Arrays.stream(Optional.ofNullable(request.getCookies()).orElse(new Cookie[0]))
-                .filter(cookie -> "origin".equals(cookie.getName()))
-                .map(Cookie::getValue)
-                .findFirst()
-                .orElse("https://danji-talk-frontend.vercel.app"); // 기본값
+        String state = request.getParameter("state");
+        log.info("state: {}", state);
+        String redisKey = "oauth2:temp:state:" + state;
 
-        // 프론트에서 설정한 쿠키 삭제
-        Cookie cookie = new Cookie("origin", null);
-        cookie.setMaxAge(0);
-        cookie.setPath("/");
-        response.addCookie(cookie);
+        String origin = (String) redisTemplate.opsForValue().get(redisKey);
+        log.info("origin: {}", origin);
+//        redisTemplate.delete(redisKey); // 굳이?
 
-        log.info("redirectUri: {}", redirectUri);
-        redirectUri = URLDecoder.decode(redirectUri, StandardCharsets.UTF_8);
-        log.info("redirect uri: {}", redirectUri);
+        String redirectUri;
+        if (origin != null) {
+            redirectUri = origin;
+        } else {
+            redirectUri = "https://danji-talk-frontend.vercel.app";
+        }
 
         // OAuth2 로그인이 성공했을 때의 추가 작업을 수행
         // 여기에서는 JWT 토큰을 발급하고 형식에 맞게 return
