@@ -2,6 +2,7 @@ package com.danjitalk.danjitalk.config;
 
 import static org.springframework.security.config.Customizer.withDefaults;
 
+import com.danjitalk.danjitalk.application.oauth.CustomAuthorizationRequestResolver;
 import com.danjitalk.danjitalk.application.oauth.OAuth2LoginSuccessHandler;
 import com.danjitalk.danjitalk.application.oauth.PrincipalOauth2UserService;
 import com.danjitalk.danjitalk.common.security.*;
@@ -44,6 +45,7 @@ public class SecurityConfig {
     private final PrincipalOauth2UserService principalOauth2UserService;
     private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
     private final RequestMappingHandlerMapping handlerMapping;
+    private final CustomAuthorizationRequestResolver authorizationRequestResolver;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -58,7 +60,7 @@ public class SecurityConfig {
             .sessionManagement(config -> config.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
         http
-            .exceptionHandling(handler->handler
+            .exceptionHandling(handler -> handler
                 .authenticationEntryPoint(new CustomAuthenticationEntryPoint(handlerMapping)) // 401
             ); //AccessDeniedHandler 403
 
@@ -70,17 +72,17 @@ public class SecurityConfig {
             );
 
         http
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.POST, "/api/login").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/logout").permitAll()
-                        .requestMatchers(HttpMethod.DELETE, "/api/member").authenticated()
-                        .requestMatchers(HttpMethod.POST, "/api/community/**").authenticated()
-                        .requestMatchers(HttpMethod.DELETE, "/api/community/**").authenticated()
-                        .requestMatchers(HttpMethod.PUT, "/api/community/**").authenticated()
-                        .requestMatchers(HttpMethod.GET, "/oauth2/authorization/*").permitAll()
-                        .requestMatchers("/api/**").permitAll()
-                        .anyRequest().denyAll()
-                );
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers(HttpMethod.POST, "/api/login").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/logout").permitAll()
+                .requestMatchers(HttpMethod.DELETE, "/api/member").authenticated()
+                .requestMatchers(HttpMethod.POST, "/api/community/**").authenticated()
+                .requestMatchers(HttpMethod.DELETE, "/api/community/**").authenticated()
+                .requestMatchers(HttpMethod.PUT, "/api/community/**").authenticated()
+                .requestMatchers(HttpMethod.GET, "/oauth2/authorization/*").permitAll()
+                .requestMatchers("/api/**").permitAll()
+                .anyRequest().denyAll()
+            );
 
         http
             .addFilterAfter(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
@@ -88,12 +90,15 @@ public class SecurityConfig {
 
         http
             .oauth2Login(oauth2 -> oauth2
-            .userInfoEndpoint(userInfoEndpoint -> userInfoEndpoint
-                .userService(principalOauth2UserService)
-            )
-            .successHandler(oAuth2LoginSuccessHandler)
+                    .authorizationEndpoint(auth -> auth
+                        .authorizationRequestResolver(authorizationRequestResolver)
+                    )
+                    .userInfoEndpoint(userInfoEndpoint -> userInfoEndpoint
+                        .userService(principalOauth2UserService)
+                    )
+                    .successHandler(oAuth2LoginSuccessHandler)
 //                .failureHandler() // TODO
-        );
+            );
 
         return http.build();
     }
@@ -124,7 +129,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/mail/certification-code/verify")
                 .requestMatchers(HttpMethod.POST, "/api/member/find-id")
                 .requestMatchers(HttpMethod.POST, "/api/member/reset-password")
-                .requestMatchers(HttpMethod.GET,"/social-login")  // TODO: social-login, favicon 삭제
+                .requestMatchers(HttpMethod.GET, "/social-login")  // TODO: social-login, favicon 삭제
                 .requestMatchers(HttpMethod.GET, "/favicon.ico")
                 .requestMatchers("/error");
         };
