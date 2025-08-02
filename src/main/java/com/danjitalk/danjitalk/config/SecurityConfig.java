@@ -5,6 +5,7 @@ import static org.springframework.security.config.Customizer.withDefaults;
 import com.danjitalk.danjitalk.application.oauth.CustomAuthorizationRequestResolver;
 import com.danjitalk.danjitalk.application.oauth.OAuth2LoginSuccessHandler;
 import com.danjitalk.danjitalk.application.oauth.PrincipalOauth2UserService;
+import com.danjitalk.danjitalk.application.user.member.CustomLogoutSuccessHandler;
 import com.danjitalk.danjitalk.common.security.*;
 import com.danjitalk.danjitalk.common.util.AccessTokenUtil;
 import com.danjitalk.danjitalk.common.util.JwtUtil;
@@ -46,6 +47,7 @@ public class SecurityConfig {
     private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
     private final RequestMappingHandlerMapping handlerMapping;
     private final CustomAuthorizationRequestResolver authorizationRequestResolver;
+    private final CustomLogoutSuccessHandler customLogoutSuccessHandler;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -67,8 +69,10 @@ public class SecurityConfig {
         http
             .logout(logout -> logout
                 .logoutUrl("/api/logout")
-                .logoutSuccessUrl("https://danji-talk-frontend.vercel.app/login") // 호출할 api 있어야 No static resource api 오류안남
+//                .logoutSuccessUrl("https://danji-talk-frontend.vercel.app/login") // 호출할 api 있어야 No static resource api 오류안남
+                // 일반적으로 로그아웃 시 리다이렉트 프론트에서 알아서 한다고 함
                 .deleteCookies("refresh", "access") // 쿠키삭제 핸들러 추가 코드
+                .logoutSuccessHandler(customLogoutSuccessHandler)
             );
 
         http
