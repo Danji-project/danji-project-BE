@@ -1,5 +1,6 @@
 package com.danjitalk.danjitalk.api.oauth;
 
+import com.danjitalk.danjitalk.common.exception.DataNotFoundException;
 import com.danjitalk.danjitalk.common.response.ApiResponse;
 import com.danjitalk.danjitalk.common.security.CustomMemberDetails;
 import com.danjitalk.danjitalk.common.util.JwtUtil;
@@ -41,6 +42,10 @@ public class OAuthController {
 
         String key = "jwt:temp:claim:" + code;
         Map<String, Object> data = (Map<String, Object>) redisTemplate.opsForValue().get(key);
+
+        if(data == null) {
+            throw new DataNotFoundException("요청한 코드에 맞는 데이터가 없습니다.");
+        }
 
         Map<String, Object> accessClaims = new HashMap<>();
         accessClaims.put("memberId", data.get("memberId"));
