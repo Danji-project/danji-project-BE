@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
  * */
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Table(uniqueConstraints = @UniqueConstraint(columnNames = {"member_id", "feed_id", "type"}))
+@Table(uniqueConstraints = @UniqueConstraint(columnNames = {"member_id", "type_id", "type"}))
 public class Bookmark extends BaseEntity {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
